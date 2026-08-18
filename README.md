@@ -72,6 +72,22 @@ The main outputs are `build/zephyr/zephyr.bin`, `zephyr.elf`, and
 west flash
 ```
 
+The target module has 4 MiB of external flash. The upstream
+`ai_m62_12f_kit` board definition already describes the full 4 MiB device and
+uses an 8 KiB boot-header partition, a 1,016 KiB application partition, and a
+3 MiB storage partition. The firmware is compiled with Zephyr's
+`CONFIG_SIZE_OPTIMIZATIONS`, which selects `-Os` with the GNU toolchain.
+
+## Source layout
+
+- `main/app/`: firmware entry point and board/profile configuration;
+- `main/backends/`: Zephyr hardware service adapters, currently Wi-Fi;
+- `main/transports/`: common transport contract and hardware transports;
+- `main/transports/usb/`: CherryUSB bulk transport and BL616 USB clock/reset glue;
+- `main/ports/cherryusb/include/`: CherryUSB-to-Zephyr compatibility headers;
+- `core/`: pinned portable WL-hosted Coprocessor Core;
+- `third_party/CherryUSB/`: pinned upstream CherryUSB source.
+
 ## Build with the existing Zephyr checkout
 
 For the checkout at `/Volumes/aigo_1t/DevPkgs/zephyrproject`, activate its
@@ -106,8 +122,8 @@ traffic. Bulk OUT is not rearmed while the bounded receive ring lacks space,
 providing endpoint-level backpressure. A bus reset cancels outstanding work and
 starts a fresh Core session after the initial enumeration.
 
-The compatibility headers in `include/` bridge CherryUSB's Bouffalo port to
-Zephyr 4.x without modifying the pinned upstream submodule. `app.overlay`
+The compatibility headers in `main/ports/cherryusb/include/` bridge CherryUSB's
+Bouffalo port to Zephyr 4.x without modifying the pinned upstream submodule. `app.overlay`
 reserves the final 8 KiB of OCRAM through BL616's non-cacheable bus alias for
 CherryUSB state and VDMA buffers; ordinary Zephyr SRAM cannot be used for these
 buffers while the BL616 data cache is enabled.
