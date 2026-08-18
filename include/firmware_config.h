@@ -10,6 +10,7 @@
 #define WLH_USB_PID 0x8201u
 #define WLH_USB_MAX_POWER_MA 500u
 #define WLH_USB_BUS_ID 0u
+#define WLH_USB_IRQ 37u
 #define WLH_USB_EP_OUT 0x01u
 #define WLH_USB_EP_IN 0x81u
 #define WLH_USB_EP_MPS 512u

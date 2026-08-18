@@ -5,13 +5,18 @@
 #include <zephyr/logging/log.h>
 
 #include "firmware_config.h"
+#if defined(CONFIG_WLH_USB_TRANSPORT)
 #include "transport.h"
-#include "wifi_backend.h"
 #include "wlh/coproc.h"
 #include "wlh/zephyr_osal.h"
+#endif
+#if defined(CONFIG_WLH_WIFI_BACKEND) && defined(CONFIG_WLH_USB_TRANSPORT)
+#include "wifi_backend.h"
+#endif
 
 LOG_MODULE_REGISTER(wlh_coproc_app, LOG_LEVEL_INF);
 
+#if defined(CONFIG_WLH_USB_TRANSPORT)
 static wlh_coproc_t coproc;
 static wlh_zephyr_osal_t zephyr_osal;
 static struct k_sem reset_requested;
@@ -40,7 +45,9 @@ static int get_device_info(void *context, wlh_coproc_device_info_t *info) {
 
 static void on_transport_reset(void *context) {
   (void)context;
+#if defined(CONFIG_WLH_WIFI_BACKEND)
   wlh_wifi_backend_transport_dead();
+#endif
   k_sem_give(&reset_requested);
 }
 
@@ -57,32 +64,48 @@ static void link_control_entry(void *first, void *second, void *third) {
     if (wlh_coproc_start(&coproc) != WLH_COPROC_OK) {
       LOG_ERR("Core restart failed");
     } else {
+#if defined(CONFIG_WLH_WIFI_BACKEND)
       wlh_wifi_backend_transport_alive();
+#endif
     }
   }
 }
+#endif
 
 int main(void) {
+#if defined(CONFIG_WLH_USB_TRANSPORT)
   wlh_coproc_config_t config;
   wlh_transport_config_t transport_config;
+#endif
 
+#if !defined(CONFIG_WLH_USB_TRANSPORT)
+  return 0;
+#else
   LOG_INF("wl-hosted %s coprocessor (%s)", WLH_MCU_NAME, WLH_BOARD_PROFILE);
   k_sem_init(&reset_requested, 0u, 1u);
   wlh_zephyr_osal_init(&zephyr_osal);
 
   memset(&config, 0, sizeof(config));
   config.port.submit_tx = wlh_transport_submit_tx;
+#if defined(CONFIG_WLH_WIFI_BACKEND)
   config.port.ethernet_sta_rx = wlh_wifi_backend_ethernet_tx;
   config.port.ethernet_ap_rx = wlh_wifi_backend_ethernet_tx;
+#endif
   config.buffers = (wlh_coproc_buffer_ops_t){NULL, buffer_alloc, buffer_free};
   config.osal = wlh_zephyr_osal_ops(&zephyr_osal);
+#if defined(CONFIG_WLH_WIFI_BACKEND)
   config.wifi = wlh_wifi_backend_ops();
+#endif
   config.device_info = (wlh_coproc_device_info_ops_t){NULL, get_device_info};
   strncpy(config.implementation_version, WLH_IMPLEMENTATION_VERSION,
           sizeof(config.implementation_version) - 1u);
   config.max_frame_size = wlh_transport_max_frame_size();
   config.heartbeat_interval_ms = 1000u;
+#if defined(CONFIG_WLH_WIFI_BACKEND)
   config.initial_credit = wlh_wifi_backend_rx_capacity();
+#else
+  config.initial_credit = 1u;
+#endif
   config.core_queue_depth = WLH_CORE_QUEUE_DEPTH;
   config.ethernet_tx_depth = (uint8_t)wlh_transport_tx_capacity();
   config.ethernet_tx_aggregation_limit = 4u;
@@ -94,26 +117,28 @@ int main(void) {
     LOG_ERR("Core initialization failed");
     return -1;
   }
+#if defined(CONFIG_WLH_WIFI_BACKEND)
   if (wlh_wifi_backend_init(&coproc) != 0) {
     LOG_ERR("Wi-Fi backend initialization failed");
     return -1;
   }
+#endif
+
   if (wlh_coproc_start(&coproc) != WLH_COPROC_OK) {
     LOG_ERR("Core start failed");
     return -1;
   }
-
   transport_config = (wlh_transport_config_t){&coproc, config.max_frame_size,
                                               on_transport_reset, NULL};
   if (wlh_transport_start(&transport_config) != 0) {
     LOG_ERR("CherryUSB transport start failed");
     return -1;
   }
-
   k_thread_create(&link_control_thread, link_control_stack,
                   K_THREAD_STACK_SIZEOF(link_control_stack), link_control_entry,
                   NULL, NULL, NULL, K_PRIO_PREEMPT(5), 0, K_NO_WAIT);
   k_thread_name_set(&link_control_thread, "wlh-link-control");
   LOG_INF("coprocessor ready, waiting for USB host");
   return 0;
+#endif
 }

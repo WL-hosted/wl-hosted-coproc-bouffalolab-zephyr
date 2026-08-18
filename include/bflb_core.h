@@ -45,6 +45,11 @@ static inline int bflb_irq_attach(int irq, bflb_irq_handler_t handler,
                              0u);
 }
 
-static inline void bflb_irq_enable(int irq) { irq_enable((unsigned int)irq); }
+/*
+ * CherryUSB calls this before the BL616 controller has masked and cleared its
+ * interrupt sources. Enabling the CLIC source at that point can trap the CPU
+ * in an interrupt storm. The application enables it after usb_dc_init().
+ */
+static inline void bflb_irq_enable(int irq) { (void)irq; }
 
 #endif

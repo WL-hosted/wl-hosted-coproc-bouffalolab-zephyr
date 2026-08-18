@@ -11,6 +11,7 @@
 #include <zephyr/sys/ring_buffer.h>
 
 #include "firmware_config.h"
+#include "bflb_usb_platform.h"
 #undef DIV_ROUND_CLOSEST
 #include "usbd_core.h"
 
@@ -400,8 +401,12 @@ int wlh_transport_start(const wlh_transport_config_t *config) {
   k_thread_name_set(&transport.rx_thread, "wlh-usb-rx");
 
   usb_stack_register();
+  if (wlh_bflb_usb_platform_prepare() != 0)
+    return -1;
   if (usbd_initialize(WLH_USB_BUS_ID, USB_BASE, usb_event_handler) != 0)
     return -1;
+
+  irq_enable(WLH_USB_IRQ);
   LOG_INF("CherryUSB ready: %04x:%04x HS bulk", WLH_USB_VID, WLH_USB_PID);
   return 0;
 }

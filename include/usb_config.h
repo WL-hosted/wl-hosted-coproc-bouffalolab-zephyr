@@ -15,6 +15,11 @@
 #define usb_phyaddr2ramaddr(addr) (addr)
 #define usb_ramaddr2phyaddr(addr) (addr)
 
+/* CherryUSB's Bouffalo port uses this legacy macro internally. */
+#if defined(CONFIG_CHERRYUSB_DEVICE_SPEED_HS)
+#define CONFIG_USB_HS 1
+#endif
+
 /* CherryUSB defines its own utility macro with this name. */
 #undef DIV_ROUND_CLOSEST
 

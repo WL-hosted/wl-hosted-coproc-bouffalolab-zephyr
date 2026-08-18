@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "WL-hosted BL616 coprocessor"
+
+config WLH_WIFI_BACKEND
+	bool "Enable the BL616 Wi-Fi backend"
+	default y
+	select NETWORKING
+	select WIFI
+	select WIFI_BFLB
+	select NET_SOCKETS
+	select NET_SOCKETS_PACKET
+	help
+	  Build and initialize the BL616 Wi-Fi adapter.
+
+config WLH_USB_TRANSPORT
+	bool "Enable the CherryUSB transport"
+	default y
+	select HWINFO
+	select CHERRYUSB
+	select CHERRYUSB_DEVICE
+	help
+	  Build and initialize the CherryUSB high-speed bulk transport.
+
+# Keep subsystem tuning attached to the feature which consumes it. These
+# declarations precede Zephyr's definitions so their conditional defaults take
+# precedence only when the WL-hosted feature is enabled.
+config NET_IPV4
+	default n if WLH_WIFI_BACKEND
+
+config NET_IPV6
+	default n if WLH_WIFI_BACKEND
+
+config NET_MAX_CONTEXTS
+	default 8 if WLH_WIFI_BACKEND
+
+config NET_PKT_RX_COUNT
+	default 40 if WLH_WIFI_BACKEND
+
+config NET_PKT_TX_COUNT
+	default 40 if WLH_WIFI_BACKEND
+
+config NET_BUF_RX_COUNT
+	default 80 if WLH_WIFI_BACKEND
+
+config NET_BUF_TX_COUNT
+	default 80 if WLH_WIFI_BACKEND
+
+config NET_RX_STACK_SIZE
+	default 4096 if WLH_WIFI_BACKEND
+
+config NET_TX_STACK_SIZE
+	default 4096 if WLH_WIFI_BACKEND
+
+config NET_MGMT_EVENT_QUEUE_SIZE
+	default 32 if WLH_WIFI_BACKEND
+
+config WIFI_BFLB_WIFI6_TX_MAX_PENDING
+	default 16 if WLH_WIFI_BACKEND
+
+config WIFI_BFLB_WIFI6_WRAM_HEAP_SIZE
+	default 16384 if WLH_WIFI_BACKEND
+
+choice CHERRYUSB_DEVICE_SPEED
+	default CHERRYUSB_DEVICE_SPEED_HS if WLH_USB_TRANSPORT
+endchoice
+
+choice CHERRYUSB_DEVICE_IP
+	default CHERRYUSB_DEVICE_BL if WLH_USB_TRANSPORT
+endchoice
+
+source "Kconfig.zephyr"
