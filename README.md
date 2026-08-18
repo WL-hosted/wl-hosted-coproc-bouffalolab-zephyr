@@ -33,8 +33,8 @@ messages are not part of this firmware.
 
 The repository pins all inputs needed by local builds and CI:
 
-- `west.yml` pins Zephyr and imports only the BL616 HAL, hostap, and Mbed TLS
-  modules required by the Wi-Fi build;
+- `west.yml` pins Zephyr and imports only the BL616 HAL, hostap, Mbed TLS, and
+  TF-PSA-Crypto modules required by the Wi-Fi build;
 - `core/` pins `wl-hosted-core`, including its Zephyr OSAL adapter;
 - `third_party/CherryUSB/` pins CherryUSB;
 - `SUBMODULE.lock` records both submodule gitlinks as full commit IDs.

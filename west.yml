@@ -12,5 +12,6 @@ manifest:
           - hal_bouffalolab
           - hostap
           - mbedtls
+          - tf-psa-crypto
   self:
     path: app
