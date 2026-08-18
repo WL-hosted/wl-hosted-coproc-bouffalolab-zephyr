@@ -18,14 +18,14 @@ jobs:
 
     steps:
       - name: Check out repository and submodules
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: app
           fetch-depth: 0
           submodules: recursive
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -61,7 +61,7 @@ jobs:
           cp build/zephyr/zephyr.map artifacts/
 
       - name: Upload firmware
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wlh-coproc-bl616-usb-wifi
           path: artifacts
