@@ -217,6 +217,7 @@ static struct usbd_interface vendor_interface;
 static void usb_event_handler(uint8_t busid, uint8_t event) {
   switch (event) {
   case USBD_EVENT_RESET:
+    LOG_DBG("USB bus reset");
     k_event_clear(&transport.events, USB_CONFIGURED_BIT);
     /* The first bus reset is part of normal enumeration and there is no
      * Host session to tear down yet. Every later reset invalidates the
@@ -228,6 +229,7 @@ static void usb_event_handler(uint8_t busid, uint8_t event) {
     k_sem_give(&transport.tx_wakeup);
     break;
   case USBD_EVENT_CONFIGURED:
+    LOG_DBG("USB configured");
     if (atomic_cas(&transport.initial_configuration_seen, 0, 1))
       atomic_clear(&transport.reset_pending);
     arm_out_read(busid);
@@ -311,13 +313,19 @@ static void tx_thread_entry(void *first, void *second, void *third) {
       if (atomic_get(&transport.reset_pending) != 0) {
         status = WLH_COPROC_TX_CANCELLED;
       } else {
+        int submit_status;
+        int wait_status = 0;
         memcpy(tx_dma_buffer, job.frame, job.size);
         k_sem_reset(&transport.tx_done);
-        if (usbd_ep_start_write(WLH_USB_BUS_ID, WLH_USB_EP_IN, tx_dma_buffer,
-                                job.size) != 0 ||
-            k_sem_take(&transport.tx_done, K_MSEC(WLH_USB_TX_TIMEOUT_MS)) !=
-                0 ||
+        submit_status = usbd_ep_start_write(WLH_USB_BUS_ID, WLH_USB_EP_IN,
+                                            tx_dma_buffer, job.size);
+        if (submit_status == 0)
+          wait_status =
+              k_sem_take(&transport.tx_done, K_MSEC(WLH_USB_TX_TIMEOUT_MS));
+        if (submit_status != 0 || wait_status != 0 ||
             atomic_get(&transport.reset_pending) != 0) {
+          LOG_ERR("bulk IN failed: size=%u submit=%d wait=%d",
+                  (unsigned int)job.size, submit_status, wait_status);
           status = WLH_COPROC_TX_CANCELLED;
         }
       }
@@ -405,6 +413,7 @@ int wlh_transport_start(const wlh_transport_config_t *config) {
     return -1;
   if (usbd_initialize(WLH_USB_BUS_ID, USB_BASE, usb_event_handler) != 0)
     return -1;
+  wlh_bflb_usb_platform_finish_init();
 
   irq_enable(WLH_USB_IRQ);
   LOG_INF("CherryUSB ready: %04x:%04x HS bulk", WLH_USB_VID, WLH_USB_PID);

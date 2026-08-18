@@ -111,7 +111,7 @@ west build -p always \
 | VID:PID | `303A:8201` |
 | Interface | vendor-specific (`0xff`) |
 | Bulk OUT | `0x01`, host to BL616 |
-| Bulk IN | `0x81`, BL616 to host |
+| Bulk IN | `0x82`, BL616 to host |
 | Max packet | 512 bytes, High Speed |
 | Maximum WL-hosted frame | 4096 bytes |
 

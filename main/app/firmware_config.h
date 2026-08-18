@@ -12,7 +12,7 @@
 #define WLH_USB_BUS_ID 0u
 #define WLH_USB_IRQ 37u
 #define WLH_USB_EP_OUT 0x01u
-#define WLH_USB_EP_IN 0x81u
+#define WLH_USB_EP_IN 0x82u
 #define WLH_USB_EP_MPS 512u
 #define WLH_USB_RX_RING_SIZE (2u * 4096u + WLH_USB_EP_MPS)
 #define WLH_USB_CONTROL_TX_QUEUE_DEPTH 4u

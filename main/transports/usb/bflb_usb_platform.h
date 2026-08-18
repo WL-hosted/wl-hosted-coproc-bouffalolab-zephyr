@@ -3,5 +3,6 @@
 #define WLH_BFLB_USB_PLATFORM_H
 
 int wlh_bflb_usb_platform_prepare(void);
+void wlh_bflb_usb_platform_finish_init(void);
 
 #endif /* WLH_BFLB_USB_PLATFORM_H */
