@@ -1,0 +1,21 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/*
+ * Reserve the final 8 KiB of BL616 OCRAM for USB DMA. The normal Zephyr SRAM
+ * mapping starts at the cacheable bus-remap alias (0x62fc0000); CherryUSB uses
+ * the matching non-cacheable alias below so VDMA and the CPU remain coherent.
+ */
+&all_ram {
+	reg = <0x62fc0000 DT_SIZE_K(312)>;
+	ranges = <0x0 0x62fc0000 DT_SIZE_K(312)>;
+};
+
+/ {
+	soc {
+		usb_nocache: memory@2300e000 {
+			compatible = "zephyr,memory-region", "mmio-sram";
+			reg = <0x2300e000 DT_SIZE_K(8)>;
+			zephyr,memory-region = "USB_NOCACHE";
+		};
+	};
+};

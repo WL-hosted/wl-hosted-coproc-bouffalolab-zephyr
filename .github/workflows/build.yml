@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Build firmware
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: BL616 / USB / Wi-Fi
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository and submodules
+        uses: actions/checkout@v4
+        with:
+          path: app
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Zephyr workspace and RISC-V SDK
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: app
+          toolchains: riscv64-zephyr-elf
+          sdk-version: 1.0.1
+
+      - name: Fetch BL61x Wi-Fi blobs
+        run: west blobs fetch --allow-regex '^lib/bl61x/' hal_bouffalolab
+
+      - name: Verify submodule locks
+        shell: bash
+        run: |
+          core_gitlink="$(git -C app rev-parse HEAD:core)"
+          core_lock="$(awk '$1 == "wl-hosted-core" { print $2 }' app/SUBMODULE.lock)"
+          cherry_gitlink="$(git -C app rev-parse HEAD:third_party/CherryUSB)"
+          cherry_lock="$(awk '$1 == "CherryUSB" { print $2 }' app/SUBMODULE.lock)"
+          test "$core_gitlink" = "$core_lock"
+          test "$cherry_gitlink" = "$cherry_lock"
+          git -C app submodule status --recursive
+
+      - name: Build firmware
+        run: west build -p always -b ai_m62_12f_kit/bl616c50q2i app
+
+      - name: Collect firmware
+        run: |
+          mkdir -p artifacts
+          cp build/zephyr/zephyr.bin artifacts/
+          cp build/zephyr/zephyr.elf artifacts/
+          cp build/zephyr/zephyr.map artifacts/
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: wlh-coproc-bl616-usb-wifi
+          path: artifacts
+          if-no-files-found: error
